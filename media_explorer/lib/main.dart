@@ -1,115 +1,225 @@
+import 'package:file/local.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:media_explorer/main_view_model.dart';
+import 'package:open_app_file/open_app_file.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MainPage()));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MainPage extends StatefulWidget {
+  const MainPage({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
+  @override
+  State<MainPage> createState() => _MainPageState();
+}
+
+class _MainPageState extends State<MainPage> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: Consumer(builder: (context, ref, _) {
+          final pageState = ref.watch(mainViewModelNotifierProvider).pageState;
+          final viewModel = ref.watch(mainViewModelNotifierProvider);
+          final totalImageItemList =
+              ref.watch(mainViewModelNotifierProvider).totalImageItemList;
+          final pageList = ref.watch(mainViewModelNotifierProvider).pageList;
+          final controller =
+              ref.watch(mainViewModelNotifierProvider).pageController;
+          final currentIndex =
+              ref.watch(mainViewModelNotifierProvider).currentIndex;
+          final bottomNavigationBarList =
+              ref.watch(mainViewModelNotifierProvider).bottomNavigationBarList;
+          final Widget body;
+          final Widget? bottomNavigationBar;
+          switch (pageState) {
+            case PageState.normal:
+              if (pageList.isEmpty) {
+                body = Column(
+                  children: [
+                    Text('tttt'),
+                  ],
+                );
+                bottomNavigationBar = null;
+              } else {
+                body = PageView(
+                  controller: controller,
+                  children: pageList,
+                );
+                bottomNavigationBar = BottomNavigationBar(
+                  currentIndex: currentIndex,
+                  onTap: (index) {
+                    ref.read(mainViewModelNotifierProvider).currentIndex =
+                        index;
+                  },
+                  items: bottomNavigationBarList,
+                );
+              }
+              break;
+            case PageState.loading:
+              body = const Center(child: CircularProgressIndicator());
+              bottomNavigationBar = null;
+              break;
+            case PageState.error:
+              body = Container();
+              bottomNavigationBar = null;
+              break;
+          }
+          return Scaffold(
+            appBar: AppBar(),
+            body: body,
+            floatingActionButton: FloatingActionButton(
+              onPressed: () async {
+                viewModel.loadData();
+              },
+              tooltip: 'Increment',
+              child: const Icon(Icons.add),
+            ), // This trailing comma makes auto-formatting nicer for build methods.
+            bottomNavigationBar: bottomNavigationBar,
+          );
+        }));
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+class ItemWidget extends StatelessWidget {
+  final String path;
+  const ItemWidget({
+    Key? key,
+    required this.path,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
+    return Container();
+  }
+}
+
+enum ItemType {
+  image,
+  movie,
+  other,
+}
+
+extension ItemTypeExtension on ItemType {
+  Widget widget(String path) {
+    switch (this) {
+      case ItemType.image:
+        return Image.network(
+          path,
+          width: 100.0,
+          height: 100.0,
+          fit: BoxFit.contain,
+        );
+      case ItemType.movie:
+        return const Text('movie');
+      case ItemType.other:
+        return const Text('other');
+    }
+  }
+}
+
+extension StringExtension on String {
+  ItemType get itemType {
+    if (endsWith('.jpeg') || endsWith('.jpg') || endsWith('.jpeg')) {
+      return ItemType.image;
+    }
+    if (endsWith('.mp4') || endsWith('.wmv') || endsWith('.mkv')) {
+      return ItemType.movie;
+    }
+    return ItemType.other;
+  }
+
+  Widget get widget {
+    switch (itemType) {
+      case ItemType.image:
+        const LocalFileSystem fs = LocalFileSystem();
+        final file = fs.file(this);
+        return Image.file(
+          file,
+          fit: BoxFit.fitHeight,
+        );
+      case ItemType.movie:
+        return const Text('movie');
+      case ItemType.other:
+        return const Text('other');
+    }
+  }
+}
+
+class TotalImagePage extends StatelessWidget {
+  final List<ItemModel> list;
+  const TotalImagePage({Key? key, required this.list}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MasonryGridView.count(
+        crossAxisCount: 4,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+        itemCount: list.length,
+        itemBuilder: (context, index) {
+          final children = <Widget>[];
+          if (index >= list.length) {
+            return Container();
+          }
+          if (list[index].image != null) {
+            children.add(list[index].image!.path.widget);
+            children.add(Text(list[index].image!.nameWithType));
+            children.add(Text(list[index].image!.path));
+          } else if (list[index].movie != null) {
+            children.add(Text(list[index].movie!.path));
+          }
+          return GestureDetector(
+            onTap: () {
+              try {
+                final path = list[index].movie?.path;
+                if (path != null) {
+                  OpenAppFile.open(path);
+                }
+              } catch (e) {
+                print(e);
+              }
+            },
+            child: Column(children: children),
+          );
+        });
+  }
+}
+
+class TotalMoviePage extends StatelessWidget {
+  const TotalMoviePage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container();
+  }
+}
+
+class TotalHasMovieImagePage extends StatelessWidget {
+  const TotalHasMovieImagePage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container();
+  }
+}
+
+class TotalHasNotMovieImagePage extends StatelessWidget {
+  const TotalHasNotMovieImagePage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container();
   }
 }
